@@ -26,7 +26,8 @@ class Sender:
 
         self.msg = EmailMessage()
         self.args = self.parser.parse_args()
-        self.send_email()
+
+        self._decide()
 
     def arguments(self):
         self.parser.add_argument('frome', help="The Email from which you want to send the mail")
@@ -34,6 +35,7 @@ class Sender:
         self.parser.add_argument('--subject', '-s', action='store_true', help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', type=int,
                                  help="Add the body to your Email , Enter the Number of lines.")
+        self.parser.add_argument('--gmail', '-g', action='store_true', help="Send the Email through Gmail")
 
     def templates(self):
         # self.header = Template(
@@ -52,6 +54,9 @@ class Sender:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
         return self.body_content
 
+    def _decide(self):
+        self.send_email() if self.args.gmail else self.parser.print_help()
+
     def send_email(self):
         self.from_email = self.args.frome
         self.to_email = self.args.to
@@ -66,8 +71,10 @@ class Sender:
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             try:
-                smtp.login(self.from_email, password="")
+                smtp.login(self.from_email, password="gautam<21>")
                 smtp.send_message(self.msg)
+                print('sending..'.swapcase())
+
             except smtplib.SMTPAuthenticationError:
                 sys.exit(
                     "Allow less secure apps is in the OFF state by going to  "
@@ -75,6 +82,7 @@ class Sender:
                     "make sure the Sender email & password are correct.")
             except socket.gaierror:
                 sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
+        print("Done!")
 
 
 Sender()
