@@ -103,7 +103,7 @@ class Sender:
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             try:
-                smtp.login(self.from_email, password="gautam<21>")
+                smtp.login(self.from_email, password="")
                 smtp.send_message(self.msg)
                 print('sending..'.swapcase())
 
