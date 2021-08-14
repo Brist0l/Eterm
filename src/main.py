@@ -1,15 +1,16 @@
-import os
+import argparse
+import readline
 import smtplib
 import socket
 import sys
+from email import encoders
 from email.message import EmailMessage
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import argparse
-from colorama import Fore, init, Style
 from string import Template
-import getpass
-import readline
+from colorama import Fore, init, Style
+import threading
 
 
 class MyCompleter:
@@ -42,6 +43,7 @@ class Sender:
         self.from_email = ""
         self.to_email = ""
         self.body_content = ""
+        self.files = []
 
         self.fail = None
         self.success = None
@@ -52,7 +54,7 @@ class Sender:
         self.file_msg = MIMEMultipart()
         self.args = self.parser.parse_args()
 
-        self.send_email()
+        self._decide()
 
     def arguments(self):
         self.parser.add_argument('frome', help="The Email from which you want to send the mail")
@@ -60,7 +62,7 @@ class Sender:
         self.parser.add_argument('--subject', '-s', action='store_true', help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', type=int,
                                  help="Add the body to your Email , Enter the Number of lines.")
-        self.parser.add_argument('--file', '-f', action='store_true', help="Add Files to your emails")
+        self.parser.add_argument('--file', '-f', type=int, help="Add Files to your emails")
 
     def templates(self):
         self.success = Template(f"{Style.BRIGHT}[{Fore.GREEN}{Fore.RESET}]{Style.RESET_ALL}$text")
@@ -74,6 +76,14 @@ class Sender:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
         return self.body_content
 
+    def get_files(self):
+        try:
+            for linenums in range(1, self.args.file + 1):
+                self.files.append(input(f"File {linenums}:"))
+        except KeyboardInterrupt:
+            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+        return self.files
+
     def file(self):
         self.from_email = self.args.frome
         self.to_email = self.args.to
@@ -83,7 +93,22 @@ class Sender:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
         self.file_msg['from'] = self.from_email
         self.file_msg['to'] = self.to_email
-        self.file_msg.attach(MIMEText(self.body() if self.args.body else None, 'plain'))
+        self.file_msg.attach(MIMEText(self.body() if self.args.body else "", 'plain'))
+        self.get_files()
+        for file in self.files:
+            with open(file, 'r') as f:
+                payload = MIMEBase('application', 'octate-stream')
+                payload.set_payload(f.read())
+                encoders.encode_base64(payload)
+                payload.add_header('Content-Decomposition', 'attachment; filename=%s' % self.files)
+            self.file_msg.attach(payload)
+        session = smtplib.SMTP('smtp.gmail.com', 587)
+        session.starttls()
+        session.login(self.from_email, "")
+        msg = self.file_msg.as_string()
+        session.sendmail(self.from_email, self.to_email, msg)
+        session.quit()
+        print("Done")
 
     def send_email(self):
         self.from_email = self.args.frome
@@ -99,7 +124,7 @@ class Sender:
 
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
-        # self.msg.set_content(self.body() if self.args.body else None)
+        self.msg.set_content(self.body() if self.args.body else "")
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             try:
@@ -115,6 +140,9 @@ class Sender:
             except socket.gaierror:
                 sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
         print("Done!")
+
+    def _decide(self):
+        self.file() if self.args.file else self.send_email()
 
 
 Sender()
