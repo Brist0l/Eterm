@@ -1,4 +1,6 @@
 import argparse
+import getpass
+import os
 import readline
 import smtplib
 import socket
@@ -10,7 +12,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from string import Template
 from colorama import Fore, init, Style
-import threading
 
 
 class MyCompleter:
@@ -66,31 +67,44 @@ class Sender:
 
     def templates(self):
         self.success = Template(f"{Style.BRIGHT}[{Fore.GREEN}{Fore.RESET}]{Style.RESET_ALL}$text")
-        self.fail = Template(f"{Style.RESET_ALL} {Style.BRIGHT}[{Fore.RED} - {Fore.RESET}] {Fore.RED}$text")
+        self.fail = Template(f"{Style.RESET_ALL}+{Style.BRIGHT}[{Fore.RED} - {Fore.RESET}] {Fore.RED}$text")
 
     def body(self):
         try:
             for linenums in range(1, self.args.body + 1):
-                self.body_content += input(f"Subject{linenums}:") + "\n"
+                self.body_content += input(f"Body {linenums}:") + "\n"
         except KeyboardInterrupt:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
         return self.body_content
 
     def get_files(self):
+        the_files = []
+        os.chdir(f'/home/{getpass.getuser()}')
+        [the_files.append(file) for file in os.listdir() if not file.startswith('.')]
         try:
+            os_completions = MyCompleter(the_files)
+            readline.set_completer(os_completions.complete)
+            readline.parse_and_bind('tab: complete')
             for linenums in range(1, self.args.file + 1):
                 self.files.append(input(f"File {linenums}:"))
         except KeyboardInterrupt:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
         return self.files
 
+    def get_subject(self):
+        try:
+            subject_completer = MyCompleter(
+                [greeting.strip() for greeting in open('Autocompletions/greeting.txt', 'r').readlines()])
+            readline.set_completer(subject_completer.complete)
+            readline.parse_and_bind('tab: complete')
+            return input(f'{Fore.BLUE}Subject>{Fore.RESET}') if self.args.subject else None
+        except KeyboardInterrupt:
+            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+
     def file(self):
         self.from_email = self.args.frome
         self.to_email = self.args.to
-        try:
-            self.file_msg['subject'] = input(f'{Fore.BLUE}Subject>') if self.args.subject else None
-        except KeyboardInterrupt:
-            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+        self.file_msg['subject'] = self.get_subject()
         self.file_msg['from'] = self.from_email
         self.file_msg['to'] = self.to_email
         self.file_msg.attach(MIMEText(self.body() if self.args.body else "", 'plain'))
@@ -100,28 +114,28 @@ class Sender:
                 payload = MIMEBase('application', 'octate-stream')
                 payload.set_payload(f.read())
                 encoders.encode_base64(payload)
-                payload.add_header('Content-Decomposition', 'attachment; filename=%s' % self.files)
-            self.file_msg.attach(payload)
-        session = smtplib.SMTP('smtp.gmail.com', 587)
-        session.starttls()
-        session.login(self.from_email, "")
-        msg = self.file_msg.as_string()
-        session.sendmail(self.from_email, self.to_email, msg)
+                payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
+                self.file_msg.attach(payload)
+        try:
+            session = smtplib.SMTP('smtp.gmail.com', 587)
+            session.starttls()
+            session.login(self.from_email, "")
+            msg = self.file_msg.as_string()
+            session.sendmail(self.from_email, self.to_email, msg)
+        except smtplib.SMTPAuthenticationError:
+            sys.exit(
+                "Allow less secure apps is in the OFF state by going to  "
+                "https://myaccount.google.com/lesssecureapps . Turn it on and try again. "
+                "make sure the Sender email & password are correct.")
+        except socket.gaierror:
+            sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
         session.quit()
-        print("Done")
+        print(self.success.substitute(text="Done!"))
 
     def send_email(self):
         self.from_email = self.args.frome
         self.to_email = self.args.to
-        try:
-            subject_completer = MyCompleter(
-                [greeting.strip() for greeting in open('Autocompletions/greeting.txt', 'r').readlines()])
-            readline.set_completer(subject_completer.complete)
-            readline.parse_and_bind('tab: complete')
-            self.msg['subject'] = input(f'{Fore.BLUE}Subject>{Fore.RESET}') if self.args.subject else None
-        except KeyboardInterrupt:
-            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
-
+        self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
         self.msg.set_content(self.body() if self.args.body else "")
@@ -130,8 +144,6 @@ class Sender:
             try:
                 smtp.login(self.from_email, password="")
                 smtp.send_message(self.msg)
-                print('sending..'.swapcase())
-
             except smtplib.SMTPAuthenticationError:
                 sys.exit(
                     "Allow less secure apps is in the OFF state by going to  "
@@ -139,7 +151,7 @@ class Sender:
                     "make sure the Sender email & password are correct.")
             except socket.gaierror:
                 sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        print("Done!")
+        print(self.success.substitute(text="Done!"))
 
     def _decide(self):
         self.file() if self.args.file else self.send_email()

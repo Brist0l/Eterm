@@ -1,5 +1,5 @@
 import getpass
-import os
+import os_test
 import readline
 
 
@@ -22,7 +22,7 @@ class MyCompleter:
             return None
 
 
-completer = MyCompleter([file for file in os.listdir(f'/home/{getpass.getuser()}') if not file.startswith('.')])
+completer = MyCompleter([file for file in os_test.listdir(f'/home/{getpass.getuser()}') if not file.startswith('.')])
 readline.set_completer(completer.complete)
 readline.parse_and_bind('tab: complete')
 
