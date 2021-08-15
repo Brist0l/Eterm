@@ -1,5 +1,6 @@
 import argparse
 import getpass
+import hashlib
 import os
 import readline
 import smtplib
@@ -18,6 +19,7 @@ class MyCompleter:
 
     def __init__(self, options):
         self.options = sorted(options)
+        self.matches = None
 
     def complete(self, text, state):
         if state == 0:
@@ -45,6 +47,7 @@ class Sender:
         self.to_email = ""
         self.body_content = ""
         self.files = []
+        self.password = b""
 
         self.fail = None
         self.success = None
@@ -54,8 +57,7 @@ class Sender:
         self.msg = EmailMessage()
         self.file_msg = MIMEMultipart()
         self.args = self.parser.parse_args()
-
-        self._decide()
+        self.check()
 
     def arguments(self):
         self.parser.add_argument('frome', help="The Email from which you want to send the mail")
@@ -101,6 +103,24 @@ class Sender:
         except KeyboardInterrupt:
             sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
 
+    def get_pass(self):
+        self.password = bytes(input("Enter Password:"), 'utf-8')
+        hashed = hashlib.sha512(self.password).digest()
+        real_pass = open('pass.txt', 'r').readline().strip()
+        if str(hashed) == str(real_pass):
+            self._decide()
+        else:
+            sys.exit("Wrong Password")
+
+    def check(self):
+        if open('pass.txt', 'r').read():  # password already there
+            self.get_pass()
+        else:
+            password = bytes(input('Enter Your Password:'), 'utf-8')
+            with open('pass.txt', 'w+') as f:
+                f.write(str(hashlib.sha512(password).digest()))
+            self.get_pass()
+
     def file(self):
         self.from_email = self.args.frome
         self.to_email = self.args.to
@@ -119,7 +139,8 @@ class Sender:
         try:
             session = smtplib.SMTP('smtp.gmail.com', 587)
             session.starttls()
-            session.login(self.from_email, "")
+            print(self.password.decode())
+            session.login(self.from_email, self.password.decode())
             msg = self.file_msg.as_string()
             session.sendmail(self.from_email, self.to_email, msg)
         except smtplib.SMTPAuthenticationError:
@@ -142,7 +163,7 @@ class Sender:
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             try:
-                smtp.login(self.from_email, password="")
+                smtp.login(self.from_email, str(self.password))
                 smtp.send_message(self.msg)
             except smtplib.SMTPAuthenticationError:
                 sys.exit(
@@ -157,4 +178,5 @@ class Sender:
         self.file() if self.args.file else self.send_email()
 
 
-Sender()
+if __name__ == '__main__':
+    Sender()
