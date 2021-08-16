@@ -127,17 +127,16 @@ class Sender:
 
     def get_files(self):
         the_files = []
-        if os.name == 'posix':
-            os.chdir(f'/home/{getpass.getuser()}')
-        else:
-            os.chdir('~')
-        [the_files.append(file) for file in os.listdir() if not file.startswith('.')]
+        # os.chdir(f'/home/{getpass.getuser()}')
+        locations = [locations.strip() for locations in open('Autocompletions/files.txt', 'r').readlines()]
+        for location in locations:
+            [the_files.append(file) for file in os.listdir(location) if not file.startswith('.')]
         try:
             os_completions = MyCompleter(the_files)
             readline.set_completer(os_completions.complete)
             readline.parse_and_bind('tab: complete')
             for linenums in range(1, self.args.file + 1):
-                self.files.append(input(f"File {linenums}:") if not "" else None)
+                self.files.append(input(f"File {linenums}:"))
         except KeyboardInterrupt:
             sys.exit('\n' + "Exiting ! Did Not Send The Email.")
         return self.files
