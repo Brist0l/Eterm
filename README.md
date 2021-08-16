@@ -20,6 +20,12 @@ cd eterm/src
 python3 main.py {from_email} {to_email} --body {number of lines} --subject --file {number of files}
 ```
 
+For help:
+
+```bash
+python3 main.py -h
+```
+
 ## Features
 
 1) Autocompletions
@@ -34,6 +40,19 @@ can add a folder name in which you have kept all the documents you want to email
 ```text
 /home/foo/Documents/stuff
 ```
+
+## 10 reasons to use it 
+
+1) It's easy to use 
+2) It's fast
+3) It's secure
+4) Autocompletions
+5) Customized autocompletions
+6) It's Lightweight
+7) When sending attachments , the name of the attachment is also displayed
+8)You can show off that you use the terminal for everything. #pro
+9)It's pretty
+10)Just like that
 
 ## Contributing
 
