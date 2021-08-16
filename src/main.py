@@ -25,7 +25,7 @@ class MyCompleter:
         if state == 0:
             if text:
                 self.matches = [s for s in self.options
-                                if s and s.startswith(text)]
+                                if text in s]
             else:
                 self.matches = self.options[:]
 
@@ -89,15 +89,14 @@ class Sender:
                         for i in range(1, 4):
                             self.password = bytes(
                                 input(
-                                    f'{Fore.RED}{i}{Fore.RESET}Wrong Password Enter Again for{Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
+                                    f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
                             if json_data['password'] == str(hashed):
-                                break
+                                self._decide()
                             else:
-                                print('Wrong Password!')
-
-                        self._decide()
+                                pass
+                        sys.exit(f'{Fore.RED}Wrong Pass This one')
                 else:
                     self.new_email()  # new email
         else:
@@ -112,11 +111,13 @@ class Sender:
                 [greeting.strip() for greeting in open('Autocompletions/greeting.txt', 'r').readlines()])
             readline.set_completer(subject_completer.complete)
             readline.parse_and_bind('tab: complete')
+            for kw in open('Autocompletions/greeting.txt', 'r').readlines():
+                readline.add_history(kw)
             return input(f'{Fore.BLUE}Subject>{Fore.RESET}') if self.args.subject else None
         except KeyboardInterrupt:
-            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+            sys.exit('\n' + "Exiting ! Did Not Send The Email.")
 
-    def body(self):
+    def get_body(self):
         try:
             MyCompleter([])
             for linenums in range(1, self.args.body + 1):
@@ -126,16 +127,19 @@ class Sender:
 
     def get_files(self):
         the_files = []
-        os.chdir(f'/home/{getpass.getuser()}')
+        if os.name == 'posix':
+            os.chdir(f'/home/{getpass.getuser()}')
+        else:
+            os.chdir('~')
         [the_files.append(file) for file in os.listdir() if not file.startswith('.')]
         try:
             os_completions = MyCompleter(the_files)
             readline.set_completer(os_completions.complete)
             readline.parse_and_bind('tab: complete')
             for linenums in range(1, self.args.file + 1):
-                self.files.append(input(f"File {linenums}:"))
+                self.files.append(input(f"File {linenums}:") if not "" else None)
         except KeyboardInterrupt:
-            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+            sys.exit('\n' + "Exiting ! Did Not Send The Email.")
         return self.files
 
     def get_reciptants(self):
@@ -147,7 +151,7 @@ class Sender:
         self.file_msg['subject'] = self.get_subject()
         self.file_msg['from'] = self.from_email
         self.file_msg['to'] = self.to_email
-        self.file_msg.attach(MIMEText(self.body() if self.args.body else "", 'plain'))
+        self.file_msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
         self.get_files()
         for file in self.files:
             with open(file, 'r') as f:
@@ -159,7 +163,6 @@ class Sender:
         try:
             with smtplib.SMTP('smtp.gmail.com', 587) as session:
                 session.starttls()
-                print(self.password.decode())
                 session.login(self.from_email, self.password.decode())
                 msg = self.file_msg.as_string()
                 session.sendmail(self.from_email, self.to_email, msg)
@@ -170,14 +173,14 @@ class Sender:
                 "make sure the Sender email & password are correct.")
         except socket.gaierror:
             sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        print("Done!")
+        sys.exit(f"{Fore.GREEN}Done!")
 
     def send_email_no_file(self):
         self.get_reciptants()
         self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
-        self.msg.set_content(self.body() if self.args.body else "")
+        self.msg.set_content(self.get_body() if self.args.body else "")
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             try:
                 smtp.login(self.from_email, self.password.decode())
@@ -190,7 +193,7 @@ class Sender:
                     "make sure the Sender email & password are correct.")
             except socket.gaierror:
                 sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        print("Done!")
+        print(f"{Fore.GREEN}Done!")
 
 
 Sender()

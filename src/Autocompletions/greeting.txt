@@ -3,7 +3,6 @@ Hi
 Hey
 How are you?
 How is it going?
-How you going?
 How are you doing?
 Nice to see you!
 Long time no see
@@ -15,7 +14,8 @@ Whatsup?
 Sup?
 Yo
 What’s the craic?
-You alright fella/lad?
+You alright fella?
 Hiya!
 Howya?
 G'day Mate
+Aur Sunna
