@@ -66,7 +66,8 @@ class Sender:
 
     def new_email(self):
         password = bytes(
-            input(f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
+            getpass.getpass(
+                f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
             'utf8')
         hashed_pass = hashlib.sha512(password)
         x = hashed_pass.hexdigest()
@@ -79,7 +80,8 @@ class Sender:
         if os.stat('pass.json').st_size != 0:
             with open('pass.json', 'r') as password_file:  # password already there
                 json_data = json.load(password_file)
-                self.password = bytes(input(f'Enter Password for{Fore.BLUE} {self.args.frome}{Fore.RESET}:'), 'utf-8')
+                self.password = bytes(getpass.getpass(f'Enter Password for{Fore.BLUE} {self.args.frome}{Fore.RESET}:'),
+                                      'utf-8')
                 hashed = hashlib.sha512(self.password).hexdigest()
                 if json_data['gmail'] == self.args.frome:
                     if str(json_data['password']) == str(hashed):
@@ -88,7 +90,7 @@ class Sender:
                         print('Wrong Password!')
                         for i in range(1, 4):
                             self.password = bytes(
-                                input(
+                                getpass.getpass(
                                     f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
@@ -127,8 +129,10 @@ class Sender:
 
     def get_files(self):
         the_files = []
-        # os.chdir(f'/home/{getpass.getuser()}')
+
         locations = [locations.strip() for locations in open('Autocompletions/files.txt', 'r').readlines()]
+        if not locations:
+            [the_files.append(file) for file in os.listdir(f'/home/{getpass.getuser()}') if not file.startswith('.')]
         for location in locations:
             [the_files.append(file) for file in os.listdir(location) if not file.startswith('.')]
         try:
