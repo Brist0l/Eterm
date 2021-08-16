@@ -50,9 +50,9 @@ can add a folder name in which you have kept all the documents you want to email
 5) Customized autocompletions
 6) It's Lightweight
 7) When sending attachments , the name of the attachment is also displayed
-8)You can show off that you use the terminal for everything. #pro
-9)It's pretty
-10)Just like that
+8) It's pretty
+9) You can show off that you use the terminal for everything. #pro
+10) Just like that
 
 ## Contributing
 
