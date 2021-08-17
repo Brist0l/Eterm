@@ -132,7 +132,11 @@ class Sender:
 
         locations = [locations.strip() for locations in open('Autocompletions/files.txt', 'r').readlines()]
         if not locations:
-            [the_files.append(file) for file in os.listdir(f'/home/{getpass.getuser()}') if not file.startswith('.')]
+            if os.name:
+                [the_files.append(file) for file in os.listdir(f'/home/{getpass.getuser()}') if
+                 not file.startswith('.')]
+            else:
+                [the_files.append(file) for file in os.listdir('~') if not file.startswith('.')]
         for location in locations:
             [the_files.append(file) for file in os.listdir(location) if not file.startswith('.')]
         try:
