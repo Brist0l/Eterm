@@ -41,6 +41,9 @@ can add a folder name in which you have kept all the documents you want to email
 /home/foo/Documents/stuff
 ```
 
+## Using Autocompletion
+To use autocompletion just press the `tab` key
+
 ## 10 reasons to use it 
 
 1) It's easy to use 
