@@ -57,7 +57,7 @@ class Sender:
         self.check()
 
     def arguments(self):
-        self.parser.add_argument('frome', help="The Email from which you want to send the mail")
+        self.parser.add_argument('from_', help="The Email from which you want to send the mail")
         self.parser.add_argument('to', help="The Email which you want to send the mail")
         self.parser.add_argument('--subject', '-s', action='store_true', help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', type=int,
@@ -67,11 +67,11 @@ class Sender:
     def new_email(self):
         password = bytes(
             getpass.getpass(
-                f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
+                f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
             'utf8')
         hashed_pass = hashlib.sha512(password)
         x = hashed_pass.hexdigest()
-        json_format = {'gmail': self.args.frome,
+        json_format = {'gmail': self.args.from_,
                        'password': x}
         with open('pass.json', 'w+') as f:
             json.dump(json_format, f)
@@ -80,10 +80,10 @@ class Sender:
         if os.stat('pass.json').st_size != 0:
             with open('pass.json', 'r') as password_file:  # password already there
                 json_data = json.load(password_file)
-                self.password = bytes(getpass.getpass(f'Enter Password for{Fore.BLUE} {self.args.frome}{Fore.RESET}:'),
+                self.password = bytes(getpass.getpass(f'Enter Password for{Fore.BLUE} {self.args.from_}{Fore.RESET}:'),
                                       'utf-8')
                 hashed = hashlib.sha512(self.password).hexdigest()
-                if json_data['gmail'] == self.args.frome:
+                if json_data['gmail'] == self.args.from_:
                     if str(json_data['password']) == str(hashed):
                         self._decide()
                     else:
@@ -91,7 +91,7 @@ class Sender:
                         for i in range(1, 4):
                             self.password = bytes(
                                 getpass.getpass(
-                                    f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.frome}{Fore.RESET}:'),
+                                    f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
                             if json_data['password'] == str(hashed):
@@ -150,7 +150,7 @@ class Sender:
         return self.files
 
     def get_reciptants(self):
-        self.from_email = self.args.frome
+        self.from_email = self.args.from_
         self.to_email = self.args.to
 
     def send_email_file(self):
