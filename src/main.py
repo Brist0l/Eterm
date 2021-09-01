@@ -35,12 +35,10 @@ class MyCompleter:
             return None
 
 
-class Sender:
+class EmailSender:
     def __init__(self):
         init(autoreset=True)
         self.parser = argparse.ArgumentParser(description="Send Emails through your terminal.")
-
-        self.arguments()
 
         self.from_email = ""
         self.to_email = ""
@@ -48,23 +46,19 @@ class Sender:
         self.files = []
         self.password = b""
 
-        self.fail = None
-        self.success = None
-
         self.msg = EmailMessage()
         self.file_msg = MIMEMultipart()
         self.args = self.parser.parse_args()
-        self.check()
 
-    def arguments(self):
+    def get_arguments(self):
         self.parser.add_argument('from_', help="The Email from which you want to send the mail")
         self.parser.add_argument('to', help="The Email which you want to send the mail")
         self.parser.add_argument('--subject', '-s', action='store_true', help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', type=int,
                                  help="Add the body to your Email , Enter the Number of lines.")
-        self.parser.add_argument('--file', '-f', type=int, help="Add Files to your emails")
+        self.parser.add_argument('--file', '-f', type=int, help="Add Files to your emails , Enter the Number of files.")
 
-    def new_email(self):
+    def new_email(self):  # gets called if a new email is recognised
         password = bytes(
             getpass.getpass(
                 f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
@@ -76,35 +70,37 @@ class Sender:
         with open('pass.json', 'w+') as f:
             json.dump(json_format, f)
 
-    def check(self):
-        if os.stat('pass.json').st_size != 0:
+        # Asking the password and adding a hash to it and storing it into a json file
+
+    def check_credentials(self):
+        if os.stat('pass.json').st_size != 0:  # check if json file is empty , if empty store new password for it
             with open('pass.json', 'r') as password_file:  # password already there
                 json_data = json.load(password_file)
                 self.password = bytes(getpass.getpass(f'Enter Password for{Fore.BLUE} {self.args.from_}{Fore.RESET}:'),
                                       'utf-8')
                 hashed = hashlib.sha512(self.password).hexdigest()
-                if json_data['gmail'] == self.args.from_:
-                    if str(json_data['password']) == str(hashed):
-                        self._decide()
+                if json_data['gmail'] == self.args.from_:  # checks if it is a new email or an old one
+                    if str(json_data['password']) == str(hashed):  # check if its the right password
+                        self._decide_file_send()
                     else:
                         print('Wrong Password!')
-                        for i in range(1, 4):
+                        for i in range(1, 4):  # gives the user 3 tries to give the right password
                             self.password = bytes(
                                 getpass.getpass(
                                     f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
-                            if json_data['password'] == str(hashed):
-                                self._decide()
-                            else:
+                            if json_data['password'] == str(hashed):  # if its right
+                                self._decide_file_send()
+                            else:  # if its wrong it exits
                                 pass
-                        sys.exit(f'{Fore.RED}Wrong Pass This one')
+                        sys.exit(f'{Fore.RED}Wrong Password')
                 else:
                     self.new_email()  # new email
         else:
             self.new_email()
 
-    def _decide(self):
+    def _decide_file_send(self):
         self.send_email_file() if self.args.file else self.send_email_no_file()
 
     def get_subject(self):
@@ -114,24 +110,23 @@ class Sender:
             readline.set_completer(subject_completer.complete)
             readline.parse_and_bind('tab: complete')
             for kw in open('Autocompletions/greeting.txt', 'r').readlines():
-                readline.add_history(kw)
+                readline.add_history(kw)  # adds history to the file
             return input(f'{Fore.BLUE}Subject>{Fore.RESET}') if self.args.subject else None
         except KeyboardInterrupt:
             sys.exit('\n' + "Exiting ! Did Not Send The Email.")
 
     def get_body(self):
         try:
-            MyCompleter([])
             for linenums in range(1, self.args.body + 1):
                 self.body_content += input(f"Body {linenums}:") + "\n"
         except KeyboardInterrupt:
-            sys.exit('\n' + self.fail.substitute(text="Exiting ! Did Not Send The Email."))
+            sys.exit("\nExiting ! Did Not Send The Email.")
 
     def get_files(self):
         the_files = []
 
         locations = [locations.strip() for locations in open('Autocompletions/files.txt', 'r').readlines()]
-        if not locations:
+        if not locations:  # if location is empty then it goes to the base ~ and not show hidden files
             if os.name:
                 [the_files.append(file) for file in os.listdir(f'/home/{getpass.getuser()}') if
                  not file.startswith('.')]
@@ -149,12 +144,12 @@ class Sender:
             sys.exit('\n' + "Exiting ! Did Not Send The Email.")
         return self.files
 
-    def get_reciptants(self):
+    def get_recipients(self):
         self.from_email = self.args.from_
         self.to_email = self.args.to
 
     def send_email_file(self):
-        self.get_reciptants()
+        self.get_recipients()
         self.file_msg['subject'] = self.get_subject()
         self.file_msg['from'] = self.from_email
         self.file_msg['to'] = self.to_email
@@ -162,7 +157,7 @@ class Sender:
         self.get_files()
         for file in self.files:
             with open(file, 'r') as f:
-                payload = MIMEBase('application', 'octate-stream')
+                payload = MIMEBase('application', 'octet-stream')
                 payload.set_payload(f.read())
                 encoders.encode_base64(payload)
                 payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
@@ -183,7 +178,7 @@ class Sender:
         sys.exit(f"{Fore.GREEN}Done!")
 
     def send_email_no_file(self):
-        self.get_reciptants()
+        self.get_recipients()
         self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
@@ -203,4 +198,7 @@ class Sender:
         print(f"{Fore.GREEN}Done!")
 
 
-Sender()
+if __name__ == '__main__':
+    send = EmailSender()
+    send.get_arguments()
+    send.check_credentials()
