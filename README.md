@@ -50,7 +50,7 @@ To use autocompletion just press the `tab` key
 2) It's fast
 3) It's secure
 4) Autocompletions
-5) Customized autocompletions
+5) Stores autocompletion history for fast access
 6) It's Lightweight
 7) When sending attachments , the name of the attachment is also displayed
 8) It's pretty
