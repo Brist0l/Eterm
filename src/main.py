@@ -3,7 +3,7 @@ import getpass
 import hashlib
 import json
 import os
-import readline
+# import readline
 import smtplib
 import socket
 import sys
@@ -48,11 +48,15 @@ class EmailSender:
         self.files = []
         self.password = b""
 
-        self.msg = EmailMessage()
-        self.file_msg = MIMEMultipart()
         self.args = self.parser.parse_args()
 
+        if self.args.file:
+            self.msg = EmailMessage()
+        else:
+            self.msg = MIMEMultipart()
+
         self.check_credentials()
+
     def get_arguments(self):
         self.parser.add_argument('from_', help="The Email from which you want to send the mail")
         self.parser.add_argument('to', help="The Email which you want to send the mail")
@@ -153,10 +157,10 @@ class EmailSender:
 
     def send_email_file(self):
         self.get_recipients()
-        self.file_msg['subject'] = self.get_subject()
-        self.file_msg['from'] = self.from_email
-        self.file_msg['to'] = self.to_email
-        self.file_msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
+        self.msg['subject'] = self.get_subject()
+        self.msg['from'] = self.from_email
+        self.msg['to'] = self.to_email
+        self.msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
         self.get_files()
         for file in self.files:
             with open(file, 'r') as f:
@@ -164,12 +168,12 @@ class EmailSender:
                 payload.set_payload(f.read())
                 encoders.encode_base64(payload)
                 payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
-                self.file_msg.attach(payload)
+                self.msg.attach(payload)
         try:
             with smtplib.SMTP('smtp.gmail.com', 587) as session:
                 session.starttls()
                 session.login(self.from_email, self.password.decode())
-                msg = self.file_msg.as_string()
+                msg = self.msg.as_string()
                 session.sendmail(self.from_email, self.to_email, msg)
         except smtplib.SMTPAuthenticationError:
             sys.exit(
