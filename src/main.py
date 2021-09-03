@@ -40,6 +40,8 @@ class EmailSender:
         init(autoreset=True)
         self.parser = argparse.ArgumentParser(description="Send Emails through your terminal.")
 
+        self.get_arguments()
+
         self.from_email = ""
         self.to_email = ""
         self.body_content = ""
@@ -50,6 +52,7 @@ class EmailSender:
         self.file_msg = MIMEMultipart()
         self.args = self.parser.parse_args()
 
+        self.check_credentials()
     def get_arguments(self):
         self.parser.add_argument('from_', help="The Email from which you want to send the mail")
         self.parser.add_argument('to', help="The Email which you want to send the mail")
@@ -200,5 +203,3 @@ class EmailSender:
 
 if __name__ == '__main__':
     send = EmailSender()
-    send.get_arguments()
-    send.check_credentials()
