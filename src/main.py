@@ -3,15 +3,15 @@ import getpass
 import hashlib
 import json
 import os
-# import readline
+import readline
 import smtplib
 import socket
 import sys
 from email import encoders
-from email.message import EmailMessage
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 from colorama import Fore, init
 
 
@@ -50,10 +50,7 @@ class EmailSender:
 
         self.args = self.parser.parse_args()
 
-        if self.args.file:
-            self.msg = EmailMessage()
-        else:
-            self.msg = MIMEMultipart()
+        self.msg = MIMEMultipart()
 
         self.check_credentials()
 
@@ -88,7 +85,7 @@ class EmailSender:
                 hashed = hashlib.sha512(self.password).hexdigest()
                 if json_data['gmail'] == self.args.from_:  # checks if it is a new email or an old one
                     if str(json_data['password']) == str(hashed):  # check if its the right password
-                        self._decide_file_send()
+                        self.send_email_file()
                     else:
                         print('Wrong Password!')
                         for i in range(1, 4):  # gives the user 3 tries to give the right password
@@ -98,7 +95,7 @@ class EmailSender:
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
                             if json_data['password'] == str(hashed):  # if its right
-                                self._decide_file_send()
+                                self.send_email_file()
                             else:  # if its wrong it exits
                                 pass
                         sys.exit(f'{Fore.RED}Wrong Password')
@@ -106,9 +103,6 @@ class EmailSender:
                     self.new_email()  # new email
         else:
             self.new_email()
-
-    def _decide_file_send(self):
-        self.send_email_file() if self.args.file else self.send_email_no_file()
 
     def get_subject(self):
         try:
@@ -126,6 +120,7 @@ class EmailSender:
         try:
             for linenums in range(1, self.args.body + 1):
                 self.body_content += input(f"Body {linenums}:") + "\n"
+            return self.body_content
         except KeyboardInterrupt:
             sys.exit("\nExiting ! Did Not Send The Email.")
 
@@ -156,19 +151,21 @@ class EmailSender:
         self.to_email = self.args.to
 
     def send_email_file(self):
+        print("file ")
         self.get_recipients()
         self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
         self.msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
-        self.get_files()
-        for file in self.files:
-            with open(file, 'r') as f:
-                payload = MIMEBase('application', 'octet-stream')
-                payload.set_payload(f.read())
-                encoders.encode_base64(payload)
-                payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
-                self.msg.attach(payload)
+        if self.args.file:
+            self.get_files()
+            for file in self.files:
+                with open(file, 'r') as f:
+                    payload = MIMEBase('application', 'octet-stream')
+                    payload.set_payload(f.read())
+                    encoders.encode_base64(payload)
+                    payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
+                    self.msg.attach(payload)
         try:
             with smtplib.SMTP('smtp.gmail.com', 587) as session:
                 session.starttls()
@@ -183,26 +180,6 @@ class EmailSender:
         except socket.gaierror:
             sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
         sys.exit(f"{Fore.GREEN}Done!")
-
-    def send_email_no_file(self):
-        self.get_recipients()
-        self.msg['subject'] = self.get_subject()
-        self.msg['from'] = self.from_email
-        self.msg['to'] = self.to_email
-        self.msg.set_content(self.get_body() if self.args.body else "")
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            try:
-                smtp.login(self.from_email, self.password.decode())
-                print('logged in')
-                smtp.send_message(self.msg)
-            except smtplib.SMTPAuthenticationError:
-                sys.exit(
-                    "Allow less secure apps is in the OFF state by going to  "
-                    "https://myaccount.google.com/lesssecureapps . Turn it on and try again. "
-                    "make sure the Sender email & password are correct.")
-            except socket.gaierror:
-                sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        print(f"{Fore.GREEN}Done!")
 
 
 if __name__ == '__main__':
