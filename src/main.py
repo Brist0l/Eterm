@@ -38,7 +38,11 @@ class MyCompleter:
 class EmailSender:
     def __init__(self):
         init(autoreset=True)
-        self.parser = argparse.ArgumentParser(description="Send Emails through your terminal.")
+        self.parser = argparse.ArgumentParser(description="Send Emails through your terminal.",
+                                              epilog="For more info check "
+                                                     "my github page "
+                                                     "https://github.com/"
+                                                     "mrHola21/Eterm/")
 
         self.get_arguments()
 
@@ -55,17 +59,19 @@ class EmailSender:
         self.check_credentials()
 
     def get_arguments(self):
-        self.parser.add_argument('from_', help="The Email from which you want to send the mail")
-        self.parser.add_argument('to', help="The Email which you want to send the mail")
-        self.parser.add_argument('--subject', '-s', action='store_true', help="Add Subject to your Email.")
+        self.parser.add_argument('from_', metavar="sender's email address",)
+        self.parser.add_argument('to', metavar="receiver's email address")
+        self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', type=int,
                                  help="Add the body to your Email , Enter the Number of lines.")
-        self.parser.add_argument('--file', '-f', type=int, help="Add Files to your emails , Enter the Number of files.")
+        self.parser.add_argument('--file', '-f', type=str,nargs='+', help="Add Files to your emails , Enter the "
+                                                                          "Number of files.")
+        self.parser.add_argument('--list', '-l', action='store_true', help='Get the list of emails')
 
     def new_email(self):  # gets called if a new email is recognised
         password = bytes(
             getpass.getpass(
-                f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
+                f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_} {Fore.RESET}:'),
             'utf8')
         hashed_pass = hashlib.sha512(password)
         x = hashed_pass.hexdigest()
@@ -73,14 +79,14 @@ class EmailSender:
                        'password': x}
         with open('pass.json', 'w+') as f:
             json.dump(json_format, f)
-
+        print(f"{Fore.CYAN}[+]Saved the Email and Password\n{Fore.BLUE} Run again to use it.")
         # Asking the password and adding a hash to it and storing it into a json file
 
     def check_credentials(self):
         if os.stat('pass.json').st_size != 0:  # check if json file is empty , if empty store new password for it
             with open('pass.json', 'r') as password_file:  # password already there
                 json_data = json.load(password_file)
-                self.password = bytes(getpass.getpass(f'Enter Password for{Fore.BLUE} {self.args.from_}{Fore.RESET}:'),
+                self.password = bytes(getpass.getpass(f'Enter Password for {Fore.BLUE} {self.args.from_}{Fore.RESET}:'),
                                       'utf-8')
                 hashed = hashlib.sha512(self.password).hexdigest()
                 if json_data['gmail'] == self.args.from_:  # checks if it is a new email or an old one
@@ -91,7 +97,8 @@ class EmailSender:
                         for i in range(1, 4):  # gives the user 3 tries to give the right password
                             self.password = bytes(
                                 getpass.getpass(
-                                    f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for{Fore.BLUE}{self.args.from_}{Fore.RESET}:'),
+                                    f'{Fore.RED}{i}{Fore.RESET} Wrong Password Enter Again for {Fore.BLUE}'
+                                    f'{self.args.from_}{Fore.RESET}:'),
                                 'utf8')
                             hashed = hashlib.sha512(self.password).hexdigest()
                             if json_data['password'] == str(hashed):  # if its right
