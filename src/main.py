@@ -48,6 +48,7 @@ class EmailSender:
 
         self.from_email = ""
         self.to_email = ""
+        self.body_content_list = []
         self.body_content = ""
         self.files = []
         self.password = b""
@@ -60,9 +61,9 @@ class EmailSender:
 
     def get_arguments(self):
         self.parser.add_argument('from_', metavar="sender's email address",)
-        self.parser.add_argument('to', metavar="receiver's email address")
+        self.parser.add_argument('--to','-t', help="receiver's email address")
         self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
-        self.parser.add_argument('--body', '-b', type=int,
+        self.parser.add_argument('--body', '-b', action="store_true",
                                  help="Add the body to your Email , Enter the Number of lines.")
         self.parser.add_argument('--file', '-f', type=str,nargs='+', help="Add Files to your emails , Enter the "
                                                                           "Number of files.")
@@ -124,12 +125,18 @@ class EmailSender:
             sys.exit('\n' + "Exiting ! Did Not Send The Email.")
 
     def get_body(self):
-        try:
-            for linenums in range(1, self.args.body + 1):
-                self.body_content += input(f"Body {linenums}:") + "\n"
-            return self.body_content
-        except KeyboardInterrupt:
-            sys.exit("\nExiting ! Did Not Send The Email.")
+        if self.args.body:
+            try:
+                while True:
+                    line = input("Body>")
+                    if line:
+                        self.body_content_list.append(line)
+                    else:
+                        break
+                    self.body_content = '/n'.join(self.body_content_list)
+            except KeyboardInterrupt:
+                print("\n Body done!")
+                return self.body_content
 
     def get_files(self):
         the_files = []
