@@ -60,13 +60,12 @@ class EmailSender:
         self.check_credentials()
 
     def get_arguments(self):
-        self.parser.add_argument('from_', metavar="sender's email address",)
-        self.parser.add_argument('--to','-t', help="receiver's email address")
+        self.parser.add_argument('from_', metavar="sender's email address", )
+        self.parser.add_argument('--to', '-t', help="receiver's email address")
         self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', action="store_true",
-                                 help="Add the body to your Email , Enter the Number of lines.")
-        self.parser.add_argument('--file', '-f', type=str,nargs='+', help="Add Files to your emails , Enter the "
-                                                                          "Number of files.")
+                                 help="Add the body to your Email")
+        self.parser.add_argument('--file', '-f', type=str, nargs='+', help="Add Files to your emails , Enter the ")
         self.parser.add_argument('--list', '-l', action='store_true', help='Get the list of emails')
 
     def new_email(self):  # gets called if a new email is recognised
@@ -80,7 +79,8 @@ class EmailSender:
                        'password': x}
         with open('pass.json', 'w+') as f:
             json.dump(json_format, f)
-        print(f"{Fore.CYAN}[+]Saved the Email and Password\n{Fore.BLUE} Run again to use it.")
+        print(f"{Fore.CYAN}[+]Saved the Email and Password")
+        self.check_credentials()
         # Asking the password and adding a hash to it and storing it into a json file
 
     def check_credentials(self):
@@ -127,58 +127,36 @@ class EmailSender:
     def get_body(self):
         if self.args.body:
             try:
+                print(f'{Fore.LIGHTBLACK_EX}Hint:{Fore.RESET} Press {Fore.BLUE}Ctrl+C{Fore.RESET} to end the message!')
                 while True:
-                    line = input("Body>")
+                    line = input(f"{Fore.CYAN}Body>")
                     if line:
                         self.body_content_list.append(line)
                     else:
                         break
-                    self.body_content = '/n'.join(self.body_content_list)
+                    self.body_content = '\n'.join(self.body_content_list)
             except KeyboardInterrupt:
-                print("\n Body done!")
+                print(f"\n\n{Fore.LIGHTGREEN_EX}Body done!\n\n")
                 return self.body_content
-
-    def get_files(self):
-        the_files = []
-
-        locations = [locations.strip() for locations in open('Autocompletions/files.txt', 'r').readlines()]
-        if not locations:  # if location is empty then it goes to the base ~ and not show hidden files
-            if os.name:
-                [the_files.append(file) for file in os.listdir(f'/home/{getpass.getuser()}') if
-                 not file.startswith('.')]
-            else:
-                [the_files.append(file) for file in os.listdir('~') if not file.startswith('.')]
-        for location in locations:
-            [the_files.append(file) for file in os.listdir(location) if not file.startswith('.')]
-        try:
-            os_completions = MyCompleter(the_files)
-            readline.set_completer(os_completions.complete)
-            readline.parse_and_bind('tab: complete')
-            for linenums in range(1, self.args.file + 1):
-                self.files.append(input(f"File {linenums}:"))
-        except KeyboardInterrupt:
-            sys.exit('\n' + "Exiting ! Did Not Send The Email.")
-        return self.files
 
     def get_recipients(self):
         self.from_email = self.args.from_
         self.to_email = self.args.to
 
     def send_email_file(self):
-        print("file ")
         self.get_recipients()
         self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
         self.msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
         if self.args.file:
-            self.get_files()
-            for file in self.files:
+            for file in self.args.file:
                 with open(file, 'r') as f:
                     payload = MIMEBase('application', 'octet-stream')
                     payload.set_payload(f.read())
                     encoders.encode_base64(payload)
-                    payload.add_header('Content-Disposition', 'attachment', filename=self.files[self.files.index(file)])
+                    payload.add_header('Content-Disposition', 'attachment',
+                                       filename=self.args.file[self.args.file.index(file)])
                     self.msg.attach(payload)
         try:
             with smtplib.SMTP('smtp.gmail.com', 587) as session:
@@ -193,7 +171,8 @@ class EmailSender:
                 "make sure the Sender email & password are correct.")
         except socket.gaierror:
             sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        sys.exit(f"{Fore.GREEN}Done!")
+        print(f"{Fore.GREEN}Done!")
+        sys.exit(0)
 
 
 if __name__ == '__main__':
