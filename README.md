@@ -16,9 +16,14 @@ git clone https://github.com/mrHola21/Eterm.git
 cd eterm/src
 ```
 
+This example over here sends an email with a body , subject and a file:
+
 ```bash
-python3 main.py {from_email} {to_email} --body {number of lines} --subject --file {number of files}
+python3 main.py {from_email} --to {to_email} --body --subject --file {files}
 ```
+
+Note : You can send multiple files too just by specifying the files after the file.
+
 
 For help:
 
