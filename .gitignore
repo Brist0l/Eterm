@@ -113,5 +113,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
-pass.json
+src/pass.json

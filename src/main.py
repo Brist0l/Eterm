@@ -6,33 +6,15 @@ import os
 import readline
 import smtplib
 import socket
+import subprocess
 import sys
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+import AutoCompleter
 from colorama import Fore, init
-
-
-class MyCompleter:
-
-    def __init__(self, options):
-        self.options = sorted(options)
-        self.matches = None
-
-    def complete(self, text, state):
-        if state == 0:
-            if text:
-                self.matches = [s for s in self.options
-                                if text in s]
-            else:
-                self.matches = self.options[:]
-
-        try:
-            return self.matches[state]
-        except IndexError:
-            return None
+import credsChecker
 
 
 class EmailSender:
@@ -73,6 +55,7 @@ class EmailSender:
             getpass.getpass(
                 f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_} {Fore.RESET}:'),
             'utf8')
+        credsChecker.check(self.args.from_, password.decode('utf-8'))
         hashed_pass = hashlib.sha512(password)
         x = hashed_pass.hexdigest()
         json_format = {'gmail': self.args.from_,
@@ -94,7 +77,7 @@ class EmailSender:
                     if str(json_data['password']) == str(hashed):  # check if its the right password
                         self.send_email_file()
                     else:
-                        print('Wrong Password!')
+                        print(f'{Fore.RED}Wrong Password!{Fore.RESET}')
                         for i in range(1, 4):  # gives the user 3 tries to give the right password
                             self.password = bytes(
                                 getpass.getpass(
@@ -114,12 +97,10 @@ class EmailSender:
 
     def get_subject(self):
         try:
-            subject_completer = MyCompleter(
+            subject_completer = AutoCompleter.MyCompleter(
                 [greeting.strip() for greeting in open('Autocompletions/greeting.txt', 'r').readlines()])
             readline.set_completer(subject_completer.complete)
             readline.parse_and_bind('tab: complete')
-            for kw in open('Autocompletions/greeting.txt', 'r').readlines():
-                readline.add_history(kw)  # adds history to the file
             return input(f'{Fore.BLUE}Subject>{Fore.RESET}') if self.args.subject else None
         except KeyboardInterrupt:
             sys.exit('\n' + "Exiting ! Did Not Send The Email.")
@@ -171,7 +152,8 @@ class EmailSender:
                 "make sure the Sender email & password are correct.")
         except socket.gaierror:
             sys.exit(f"{Fore.RED}Check your internet & firewall settings.")
-        print(f"{Fore.GREEN}Done!")
+        os.system('clear' if os.name == 'posix' else 'cls')
+        print(f"{Fore.GREEN} Email Send ")
         sys.exit(0)
 
 
