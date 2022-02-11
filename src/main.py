@@ -35,7 +35,7 @@ class EmailSender:
         self.files = []
         self.password = b""
 
-        self.args = self.parser.parse_args()
+        self.args = self.parser.parse_args() # For better extendibility in the future
 
         self.msg = MIMEMultipart()
 
@@ -54,25 +54,25 @@ class EmailSender:
         password = bytes(
             getpass.getpass(
                 f'This Is Your First Time Entering The Password For {Fore.BLUE}{self.args.from_} {Fore.RESET}:'),
-            'utf8')
-        credsChecker.check(self.args.from_, password.decode('utf-8'))
-        hashed_pass = hashlib.sha512(password)
+            'utf8') # For keeping the passwd a secret 
+        credsChecker.check(self.args.from_, password.decode('utf-8')) # External File Call
+        hashed_pass = hashlib.sha512(password) # Hash the passwd for better security
         x = hashed_pass.hexdigest()
         json_format = {'gmail': self.args.from_,
-                       'password': x}
+                       'password': x} # Load it into a json format
         with open('pass.json', 'w+') as f:
-            json.dump(json_format, f)
+            json.dump(json_format, f) # write json
         print(f"{Fore.CYAN}[+]Saved the Email and Password")
+        print("Sending Email Now")
         self.check_credentials()
-        # Asking the password and adding a hash to it and storing it into a json file
 
     def check_credentials(self):
-        if os.stat('pass.json').st_size != 0:  # check if json file is empty , if empty store new password for it
+        if os.stat('pass.json').st_size != 0:  # check if json file is empty 
             with open('pass.json', 'r') as password_file:  # password already there
                 json_data = json.load(password_file)
                 self.password = bytes(getpass.getpass(f'Enter Password for {Fore.BLUE} {self.args.from_}{Fore.RESET}:'),
                                       'utf-8')
-                hashed = hashlib.sha512(self.password).hexdigest()
+                hashed = hashlib.sha512(self.password).hexdigest() # hash the current passwd to check with the passwd present in the json file
                 if json_data['gmail'] == self.args.from_:  # checks if it is a new email or an old one
                     if str(json_data['password']) == str(hashed):  # check if its the right password
                         self.send_email_file()
@@ -93,8 +93,8 @@ class EmailSender:
                 else:
                     self.new_email()  # new email
         else:
-            self.new_email()
-
+            self.new_email() # File is empty . Creating a new email entry
+                # This method leads to either `new_email()` or `send_email_file()` 
     def get_subject(self):
         try:
             subject_completer = AutoCompleter.MyCompleter(
@@ -129,7 +129,7 @@ class EmailSender:
         self.msg['subject'] = self.get_subject()
         self.msg['from'] = self.from_email
         self.msg['to'] = self.to_email
-        self.msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain'))
+        self.msg.attach(MIMEText(self.get_body() if self.args.body else "", 'plain')) # Empty Body if not specified
         if self.args.file:
             for file in self.args.file:
                 with open(file, 'r') as f:
