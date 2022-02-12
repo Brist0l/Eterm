@@ -12,8 +12,10 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import AutoCompleter
+
 from colorama import Fore, init
+
+import AutoCompleter
 import credsChecker
 
 
@@ -34,6 +36,8 @@ class EmailSender:
         self.body_content = ""
         self.files = []
         self.password = b""
+        self.server = "smtp.gmail.com"
+        self.port = 587
 
         self.args = self.parser.parse_args() # For better extendibility in the future
 
@@ -47,9 +51,11 @@ class EmailSender:
         self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', action="store_true",
                                  help="Add the body to your Email")
-        self.parser.add_argument('--file', '-f', type=str, nargs='+', help="Add Files to your emails , Enter the ")
+        self.parser.add_argument('--file', '-f', type=str, nargs='+', help="Add Files to your emails")
         self.parser.add_argument('--list', '-l', action='store_true', help='Get the list of emails')
-
+        self.parser.add_argument('--server','-S',type=str,help="Change The SMTP server.Default is 'smtp.gmail.com'")
+        self.parser.add_argument('--port','-p',type=int,help="Change The SMTP server's port.Default is 587")
+        
     def new_email(self):  # gets called if a new email is recognised
         password = bytes(
             getpass.getpass(
@@ -140,7 +146,11 @@ class EmailSender:
                                        filename=self.args.file[self.args.file.index(file)])
                     self.msg.attach(payload)
         try:
-            with smtplib.SMTP('smtp.gmail.com', 587) as session:
+            if self.args.server:
+                self.server = self.args.server
+            if self.args.port:
+                self.port = self.args.port 
+            with smtplib.SMTP(self.server,self.port) as session:
                 session.starttls()
                 session.login(self.from_email, self.password.decode())
                 msg = self.msg.as_string()
