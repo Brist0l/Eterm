@@ -59,8 +59,8 @@ To use autocompletion just press the `tab` key
 6) It's Lightweight
 7) When sending attachments , the name of the attachment is also displayed
 8) It's pretty
-9) You can show off that you use the terminal for everything. #pro
-10) Just like that
+9) Be a terminal geek
+10) Configurable SMTP 
 
 ## Contributing
 
