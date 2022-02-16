@@ -6,7 +6,6 @@ import os
 import readline
 import smtplib
 import socket
-import subprocess
 import sys
 from email import encoders
 from email.mime.base import MIMEBase
@@ -120,10 +119,13 @@ class EmailSender:
                     if line:
                         self.body_content_list.append(line)
                     else:
-                        break
+                        if line == "":
+                            self.body_content_list.append("\n")
+                        else:
+                            break
                     self.body_content = '\n'.join(self.body_content_list)
             except KeyboardInterrupt:
-                print(f"\n\n{Fore.LIGHTGREEN_EX}Body done!\n\n")
+                print(f"\n\n{Fore.LIGHTGREEN_EX}Body done!")
                 return self.body_content
 
     def get_recipients(self):
