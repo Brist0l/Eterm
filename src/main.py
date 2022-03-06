@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import argparse
 import getpass
 import hashlib
@@ -11,9 +13,11 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import imaplib
+import email
+from colorama import Fore, init,Style,Back
 
-from colorama import Fore, init
-
+# File imports
 import AutoCompleter
 import credsChecker
 
@@ -36,7 +40,9 @@ class EmailSender:
         self.files = []
         self.password = b""
         self.server = "smtp.gmail.com"
+        self.imap_server = "imap.gmail.com"
         self.port = 587
+
 
         self.args = self.parser.parse_args() # For better extendibility in the future
 
@@ -48,13 +54,20 @@ class EmailSender:
         self.parser.add_argument('from_', metavar="sender's email address", )
         self.parser.add_argument('--to', '-t', help="receiver's email address")
         self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
-        self.parser.add_argument('--body', '-b', action="store_true",
-                                 help="Add the body to your Email")
+        self.parser.add_argument('--body', '-b', action="store_true",help="Add the body to your Email")
         self.parser.add_argument('--file', '-f', type=str, nargs='+', help="Add Files to your emails")
-        self.parser.add_argument('--list', '-l', action='store_true', help='Get the list of emails')
+        self.parser.add_argument('--list', '-l',action="store",type=int,nargs='?', help='Get the list of emails')
+        # self.parser.add_argument('--search',)
         self.parser.add_argument('--server','-S',type=str,help="Change The SMTP server.Default is 'smtp.gmail.com'")
+        self.parser.add_argument('--imapserver','-i',type=str,help="Change The Imap Server.Default is 'imap.gmail.com'")
         self.parser.add_argument('--port','-p',type=int,help="Change The SMTP server's port.Default is 587")
-        
+
+    def route(self):
+        if self.args.list != None:
+            self.read_email()
+        else:
+            self.send_email_file()
+
     def new_email(self):  # gets called if a new email is recognised
         password = bytes(
             getpass.getpass(
@@ -80,7 +93,7 @@ class EmailSender:
                 hashed = hashlib.sha512(self.password).hexdigest() # hash the current passwd to check with the passwd present in the json file
                 if json_data['gmail'] == self.args.from_:  # checks if it is a new email or an old one
                     if str(json_data['password']) == str(hashed):  # check if its the right password
-                        self.send_email_file()
+                        self.route()
                     else:
                         print(f'{Fore.RED}Wrong Password!{Fore.RESET}')
                         for i in range(1, 4):  # gives the user 3 tries to give the right password
@@ -148,9 +161,9 @@ class EmailSender:
                                        filename=self.args.file[self.args.file.index(file)])
                     self.msg.attach(payload)
         try:
-            if self.args.server:
+            if self.args.server != None:
                 self.server = self.args.server
-            if self.args.port:
+            if self.args.port != None:
                 self.port = self.args.port 
             with smtplib.SMTP(self.server,self.port) as session:
                 session.starttls()
@@ -168,6 +181,47 @@ class EmailSender:
         print(f"{Fore.GREEN} Email Send ")
         sys.exit(0)
 
+    def read_email(self):
+        if self.args.imapserver != None:
+            self.imap_server = self.args.imapserver
+
+        try:
+            mail = imaplib.IMAP4_SSL(self.imap_server)
+        except socket.gaierror:
+            sys.exit(f"`{Fore.RED}{self.imap_server}{Fore.RESET}` Service Not recogonised")
+        
+        self.get_recipients()
+        mail.login(self.from_email,str(self.password.decode()))
+
+        #select inbox
+        mail.select("INBOX",readonly=True)
+
+        #select specific mails
+        filter = "ALL"
+        _, selected_mails = mail.search(None,filter)
+
+        #total number of mails from specific user
+        print("Total Emails:", len(selected_mails[0].split()))
+        for num in selected_mails[0].split()[::-1][0:self.args.list]:
+            _, data = mail.fetch(num, '(RFC822)')
+            _, bytes_data = data[0]
+
+            #convert the byte data to message
+            email_message = email.message_from_bytes(bytes_data)
+            print("\n===========================================")
+
+            #access data
+            print(f"{Fore.MAGENTA}From:{email_message['from']}")
+            print(f"{Fore.GREEN}To: {email_message['to']}")
+            print(f"{Fore.BLUE}Subject:{email_message['subject']}")
+            print(f"{Fore.RED}Date:{email_message['date']}")
+            for part in email_message.walk():
+                if part.get_content_type()=="text/plain" or part.get_content_type()=="text/html":
+                    message = part.get_payload(decode=True)
+                    print("==========================================\n")
+                    print("Message: \n", message.decode())
+                    print("==========================================\n")
+                    break
 
 if __name__ == '__main__':
     send = EmailSender()

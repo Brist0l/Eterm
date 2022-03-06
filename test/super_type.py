@@ -8,4 +8,4 @@ def super_type(b):  # used
         time.sleep(0.03)
 
 
-super_type('HEllo')
+super_type('\nHEllo')
