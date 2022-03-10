@@ -10,6 +10,7 @@ Use git to install it
 git clone https://github.com/mrHola21/Eterm.git
 ```
 
+[eterm](https://github.com/mrHola21/Eterm/blob/main/imgs/eterm.png?raw=true)
 ## Usage
 
 ```bash
