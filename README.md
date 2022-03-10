@@ -1,6 +1,6 @@
 # Eterm
 
-Send Emails through the terminal , fast and secure
+Send or view emails through the terminal with style.
 
 ## Installation
 
@@ -24,18 +24,11 @@ python3 main.py {from_email} --to {to_email} --body --subject --file {files}
 
 Note : You can send multiple files too just by specifying the files after the file.
 
-
 For help:
 
 ```bash
 python3 main.py -h
 ```
-
-## Features
-
-1) Autocompletions
-2) Secure , it has got a sha512 hash implemented and when typing the password ,the password is not visible
-3) feature rich , You can send files too
 
 ## Autocompletion
 
@@ -47,20 +40,21 @@ can add a folder name in which you have kept all the documents you want to email
 ```
 
 ## Using Autocompletion
+
 To use autocompletion just press the `tab` key
 
-## 10 reasons to use it 
+## 10 reasons to use it
 
-1) It's easy to use 
-2) It's fast
-3) It's secure
-4) Autocompletions
-5) Stores autocompletion history for fast access
-6) It's Lightweight
-7) When sending attachments , the name of the attachment is also displayed
-8) It's pretty
+1) Easy To Use
+2) Fast
+3) Secure
+4) Supports Autocompletion
+5) Stores Autocompletion History For Speed
+6) Lightweight
+7) Recursive email searching
+8) Compact Email viewing options
 9) Be a terminal geek
-10) Configurable SMTP 
+10) Configurable SMTP
 
 ## Contributing
 
