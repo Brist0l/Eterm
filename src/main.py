@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+from ast import For
 import getpass
 import hashlib
 import json
@@ -15,7 +16,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import imaplib
 import email
-from colorama import Fore, init,Style,Back
+from colorama import Fore, init
 
 # File imports
 import AutoCompleter
@@ -42,7 +43,7 @@ class EmailSender:
         self.server = "smtp.gmail.com"
         self.imap_server = "imap.gmail.com"
         self.port = 587
-
+        self.search = "ALL"
 
         self.args = self.parser.parse_args() # For better extendibility in the future
 
@@ -52,18 +53,20 @@ class EmailSender:
 
     def get_arguments(self):
         self.parser.add_argument('from_', metavar="sender's email address", )
-        self.parser.add_argument('--to', '-t', help="receiver's email address")
+        self.parser.add_argument('--to', '-t',metavar="Receivers email", help="receiver's email address")
         self.parser.add_argument('--subject', '-s', action="store_true", help="Add Subject to your Email.")
         self.parser.add_argument('--body', '-b', action="store_true",help="Add the body to your Email")
-        self.parser.add_argument('--file', '-f', type=str, nargs='+', help="Add Files to your emails")
-        self.parser.add_argument('--list', '-l',action="store",type=int,nargs='?', help='Get the list of emails')
-        # self.parser.add_argument('--search',)
-        self.parser.add_argument('--server','-S',type=str,help="Change The SMTP server.Default is 'smtp.gmail.com'")
-        self.parser.add_argument('--imapserver','-i',type=str,help="Change The Imap Server.Default is 'imap.gmail.com'")
-        self.parser.add_argument('--port','-p',type=int,help="Change The SMTP server's port.Default is 587")
+        self.parser.add_argument('--file', '-f',metavar="File", type=str, nargs='+', help="Add Files to your emails")
+        self.parser.add_argument('--listall', '-L',action="store_true", help='show all emails')
+        self.parser.add_argument('--list', '-l',metavar="number of emails to show",action="store",type=int, help='Get Specific Amount Emails')
+        self.parser.add_argument('--verbose','-v',action="store_true",help="Get Expanded Emails")
+        self.parser.add_argument('--search',help="Search for a specific email")
+        self.parser.add_argument('--server','-S',metavar="server name",type=str,help="Change The SMTP server.Default is 'smtp.gmail.com'")
+        self.parser.add_argument('--imapserver','-i',metavar="imap server",type=str,help="Change The Imap Server.Default is 'imap.gmail.com'")
+        self.parser.add_argument('--port','-p',metavar="port number" ,type=int,help="Change The SMTP server's port.Default is 587")
 
     def route(self):
-        if self.args.list != None:
+        if self.args.list != None or self.args.listall or self.args.search:
             self.read_email()
         else:
             self.send_email_file()
@@ -196,21 +199,21 @@ class EmailSender:
         #select inbox
         mail.select("INBOX",readonly=True)
 
-        #select specific mails
-        filter = "ALL"
-        _, selected_mails = mail.search(None,filter)
+        if self.args.search:
+            self.search = f'(FROM "{self.args.search}")'
+        _, selected_mails = mail.search(None,self.search)
 
-        #total number of mails from specific user
+        self.total_mails = len(selected_mails[0].split())
+
         print("Total Emails:", len(selected_mails[0].split()))
-        for num in selected_mails[0].split()[::-1][0:self.args.list]:
-            _, data = mail.fetch(num, '(RFC822)')
-            _, bytes_data = data[0]
 
-            #convert the byte data to message
-            email_message = email.message_from_bytes(bytes_data)
+        if not self.args.listall:
+            num_of_emails = selected_mails[0].split()[::-1][0:self.args.list]
+        else:
+            num_of_emails = selected_mails[0].split()[::-1]
+
+        def verbose():
             print("\n===========================================")
-
-            #access data
             print(f"{Fore.MAGENTA}From:{email_message['from']}")
             print(f"{Fore.GREEN}To: {email_message['to']}")
             print(f"{Fore.BLUE}Subject:{email_message['subject']}")
@@ -219,9 +222,30 @@ class EmailSender:
                 if part.get_content_type()=="text/plain" or part.get_content_type()=="text/html":
                     message = part.get_payload(decode=True)
                     print("==========================================\n")
-                    print("Message: \n", message.decode())
+                    print(f"{message.decode()}")
                     print("==========================================\n")
                     break
+        def concise():
+            print("\n===========================================")
+            print(f"{Fore.MAGENTA}From:{email_message['from']}")
+            print(f"{Fore.BLUE}Subject:{email_message['subject']}")
+            print(f"{Fore.RED}Date:{email_message['date']}")
+            print("===========================================")
+
+        print("Fetching...")
+
+        for num in num_of_emails:
+            _, data = mail.fetch(num, '(RFC822)')
+            _, bytes_data = data[0]
+
+            #convert the byte data to message
+            email_message = email.message_from_bytes(bytes_data)
+
+            if self.args.verbose:
+                verbose()
+            else:
+                concise()
+            
 
 if __name__ == '__main__':
     send = EmailSender()
