@@ -7,7 +7,7 @@ Send or view emails through the terminal with style.
 Use git to install it
 
 ```bash
-git clone https://github.com/mrHola21/Eterm.git
+git clone https://github.com/Brist0l/Eterm.git
 ```
 
 ![eterm](https://github.com/mrHola21/Eterm/blob/main/imgs/eterm.png?raw=true)
